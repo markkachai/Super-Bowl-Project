@@ -1,0 +1,373 @@
+---
+title: "Super Bowl Project"
+author: "Mark Kachai"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+Use control+Enter to run the code chunks on PC.
+Use  command+Enter to run the code chunks on MAC.
+
+### Load Packages
+
+In this section, we install and load the necessary packages. 
+
+```{r libraries, message=FALSE, include = FALSE}
+### Install packages. If you haven't install the following package, please uncomment the line below to install it. Then, comment it back before knitting the document.
+#install.packages('dplyr')
+#install.packages('ggplot2')
+
+### load libraries for use in current working session
+library('dplyr')
+library('ggplot2')
+
+```
+
+### Import Data
+
+In this section, we import the necessary data for this lab.
+
+```{r import, include=FALSE}
+### set your working directory
+# use setwd to set your working directory
+
+# you can also go to session-> set working directory -> choose directory
+# working directory is the path to the folder and not file
+
+# make sure the path of the directory is correct, i.e., where you have stored your data
+
+setwd("/Users/markkachai/Desktop/Projects/SuperBowlProject")
+
+### import data file
+# read the file using read.csv
+superbowl <- read.csv(file = "superbowl.csv",fileEncoding = 'UTF-8-BOM')
+
+```
+
+# Super Bowl Case Study
+
+You are hired as a Business Analyst to help the manager to find out if spending millions of dollars on Super Bowl ads creates social media buzz.
+
+As a first step, we carry out the analysis using DPLYR, using superbowl.csv data.
+
+### Dataset Exploration
+
+```{r explore}
+# Use five functions dim(), colnames(), str(), head() and tail() to explore all the superbowl table
+# observe different columns of the table and values in the rows
+# type your answer below this line
+
+dim(superbowl)
+colnames(superbowl)
+str(superbowl)
+head(superbowl)
+tail(superbowl)
+
+# tell R, new_brand, month and superbowl columns are factor 
+
+superbowl$new_brand <- as.factor(superbowl$new_brand)
+superbowl$month <- as.factor(superbowl$month)
+superbowl$superbowl <- as.factor(superbowl$superbowl)
+
+# tell R, week_of is date of format "%d-%b-%y"
+
+superbowl$week_of <- as.Date(superbowl$week_of, "%d-%b-%y")
+
+# you can try and experiment with different date formats here: 
+# https://campus.datacamp.com/courses/intermediate-r-for-finance/dates?ex=6
+
+
+```
+
+### Five Functions of DPLYR
+
+```{r DPLYR Basics 1}
+# Query 1. Filter all rows where new_brand == 'Beetle'
+
+superbowl %>% filter(new_brand == "Beetle")
+
+```
+
+##### This query filters the superbowl table to only show those rows (observations) containing "Beetle" from the new_brand column (variable). Based on the output from this query, we can see that there are 15 rows containing "Beetle" in the new_brand column. From this data, we see that the highest ad spend was the week of the Superbowl as well as the week after, with ad spends of $7,105,00 and $2,576,200, respectively. These two weeks also had the largest volume of buzz metrics.
+
+##### Another noticeable observation is that the week that had the 3rd largest volume of buzz metrics/mentions at 4,396, only had $42,800 spent on ads. During the week of the Superbowl, the volume of mentions was 5144, only 748 higher - While the amount spent on ads was about 166 times that of the amount spent on ads during the previously mentioned week, where only $42,800 was spent on ads. With that said, much less was spent on ads during the week of 2012-02-20, however, it was only 748 mentions behind the volume of mentions during the week of the Superbowl itself. This could be due to how close this date was to after the Superbowl, or it could mean that less should be spent on ads during the week of the Superbowl, given that the volume of mentions is not significantly higher than other weeks, where ad spend was significantly lower (The week of 2012-01-16, which is about two weeks before the Superbowl, also has a low ad spend but relatively high volume of buzz metrics when compared to the actual week of the Superbowl).
+
+```{r DPLYR Basics 2}
+# Query 2. Select all the columns related to buzz metrics (volume, positive and negative mentions)
+
+superbowl %>% select(volume, pos, neg)
+
+```
+
+##### This query selects all columns related to buzz metrics, which includes volume, pos, and neg. Based on the output from this query, we can see that for all 45 rows, the positive mentions outweigh the negative mentions. There is also a mixed column, which is not included in this output. Overall, the three brands received very positive mentions.
+
+##### To better understand the ratio of positive to negative mentions, I created a new column in the following query, named percent_positive.
+
+```{r New Column: percent_positive}
+superbowl %>% mutate(percent_positive = pos/(pos+neg)) %>% select(new_brand, volume, pos, neg, percent_positive)
+
+# Based on the results in this new column, we can see a very high percent of positive mentions in every row.
+
+```
+
+```{r DPLYR Basics 3}
+# Query 3. Arrange the adspend column in descending order and see which brand has the highest ad spend and in which week_of
+
+superbowl %>% arrange(-adspend) %>% select(week_of, adspend, new_brand)
+
+```
+
+##### The result of this query shows which brand has the highest ad spend in which week_of. The adspend column is in descending order. From this, we can see that Beetle had its most ad spend (and the most ad spend compared to the other two brands), $7,105,000, during the week of 2012-01-30. Camaro had its largest ad spend of $3,977,600 during the week of 2012-01-30 as well. This makes it have the 2nd largest ad spend of the three brands. CR-Z had its largest ad spend of $2,400 during the week of 2012-01-23. Both Beetle and Camaro had their highest ad spend during the week of the Superbowl, while CR-Z had its highest adspend a week before it.
+
+##### Overall, Beetle had the highest ad spend when compared to the other brands, during the week of the 2012-01-30, which was the week of the Superbowl.
+
+```{r DPLYR Basics 4}
+# Query 4. Create a new column called sentiment which is a sum of positive (column name is pos) and negative (column name is neg) mentions,
+# and select only three columns for display, week_of, new_brand and sentiment
+
+superbowl %>% mutate(sentiment = pos+neg) %>% select(week_of, new_brand, sentiment)
+
+```
+
+##### The results of this query show the sum of positive and negative mentions for each brand in a column named sentiment. From these results, we can see that Camaro has a significantly high sentiment for almost every week in the dataset. Beetle has the second largest volume of sentiment. CR-Z has the least amount of sentiment overall when compared to the other two brands. The largest volume of sentiment experienced by Camaro was 32,988 during the week of 2012-02-27 (a few weeks after the Superbowl). The largest volume of sentiment experienced by Beetle was 2,585 during the week of 2012-02-06 (during the week after the Superbowl). Lastly, the largest volume of sentiment experienced by CR-Z was 652 during the week of 2012-02-06 (during the week after the Superbowl). 
+
+##### Overall, Camaro easily had the highest volume of sentiment among all the brands. Camaro was able to maintain a significantly high volume of sentiment weeks before and after the Superbowl, meaning its ads were continuously highly effective.
+
+
+### Section 1: Univariate Statistics
+
+```{r Section 1.1}
+# First, compute the *mean*, *variance*, and *standard deviation* of **adspend** for each **new_brand** before the Super Bowl and after the Super Bowl, using the relevant *R* functions.
+
+superbowl %>% group_by(new_brand, superbowl) %>% summarise(mean=mean(adspend), variance=var(adspend), sd=sd(adspend))
+
+```
+
+##### The output of this query shows the mean, variance, and standard deviation of adpsend for each new brand before and after the Super Bowl.
+
+##### For Beetle and Camaro, the mean ad spend significantly increased after (and during the week of) the Super Bowl, while the mean ad spend for CR-Z decreased. The variance for ad spend between Beetle and Camaro significantly increases from before to after the Super Bowl. Likewise, the standard deviation also significantly increases from before to after the Super Bowl for Beetle and Camaro as well.
+
+```{r Section 1.2}
+# Second, create a new column in  superbowl dataset, call it **pos_prop**, and calculate the proportion of positive mentions for each **new_brand** and each **week** (each row). Similarly, create a new column in  superbowl dataset, call it **neg_prop**, and calculate the proportion of negative mentions for each **new_brand** and each **week**.
+
+superbowl <- superbowl %>% mutate(pos_prop=pos/volume, neg_prop=neg/volume)
+
+```
+
+##### This query added two new columns to the superbowl dataset: pos_prop and neg_prop. The column 'pos_prop' shows the proportion of positive mentions for each new_brand and each week (row). The column 'neg_prop' shows the proportion of negative mentions for each new_brand and each week (row). 
+
+```{r Section 1.3}
+# Third, compute the *mean* and *standard deviation* of **volume**, **pos_prop** and **neg_prop** for each **new_brand** before the Super Bowl and after the Super Bowl.
+
+# The mean and standard deviation of volume for each new_brand before the Super Bowl and after the Super Bowl.
+
+superbowl %>% group_by(new_brand, superbowl) %>% summarise(mean=mean(volume), sd=sd(volume))
+
+# The mean and standard deviation of pos_prop for each new_brand before the Super Bowl and after the Super Bowl.
+
+superbowl %>% group_by(new_brand, superbowl) %>% summarise(mean=mean(pos_prop), sd=sd(pos_prop))
+
+# The mean and standard deviation of neg_prop for each new_brand before the Super Bowl and after the Super Bowl.
+
+superbowl %>% group_by(new_brand, superbowl) %>% summarise(mean=mean(neg_prop), sd=sd(neg_prop))
+
+```
+
+### **Questions**: 
+
+##### 1. What brand has the **highest mean ad spend** after the Super Bowl? Has the mean ad spending increased after the Super Bowl for that brand? By how much?
+
+```{r Section 1: Question 1}
+superbowl %>% group_by(new_brand, superbowl) %>% summarise(mean=mean(adspend))
+
+```
+
+##### From this query, we find the brand that has the highest mean ad spend after the Super Bowl to be Beetle, with a mean ad spend of $891,000. The mean ad spending increased significantly after the Super Bowl, from an average of $2,170 to $891,000. The average ad spend increased by $888,830 from before to after the Super Bowl.
+
+##### 2. What brand has the **highest mean** volume of mentions after the Super Bowl ? On average, what proportion of mentions are positive and what proportion of mentions are negative for that brand after the Super Bowl?
+
+```{r Section 1: Question 2}
+superbowl %>% filter(superbowl==1) %>% group_by(new_brand) %>% summarise(mean_volume=mean(volume), mean_pos_prop=mean(pos_prop), mean_neg_prop=mean(neg_prop))
+
+```
+
+##### From this query, we find the brand that has the highest mean volume of mentions after the Super Bowl to be Camaro, with a mean volume of 93,613 mentions after the Super Bowl. On average, the proportions of mentions that are positive for Camaro after the Super Bowl is 0.247. The proportions of mentions that are negative for Camaro after the Super Bowl, on average, is 0.0487. So, on average, there is a higher proportion of positive mentions for Camaro than negative mentions after the Super Bowl.
+
+##### 3. What brand has the **lowest variability** in volume of mentions after the Super Bowl?
+
+```{r Section 1: Question 3}
+superbowl %>% filter(superbowl==1) %>% group_by(new_brand) %>% summarise(variability=sd(volume))
+
+```
+
+##### The output of this query shows the variability in volume of mentions for each brand after the Super Bowl. Based on this query, the brand that has the lowest variability in volume of mentions after the Super Bowl is CR-Z, with a standard deviation of 712.
+
+
+### Section 2: Bivariate Statistics
+
+```{r Section 2.1}
+# First, compute the *correlation* between **adspend** and **volume** in superbowl dataset, before the Super Bowl and after the Super Bowl, using the relevant *R* functions.
+
+superbowl %>% group_by(superbowl) %>% summarise(correlation=cor(adspend, volume))
+
+```
+
+##### The result of this query shows that there is an extremely strong, positive correlation between adspend and volume before the Super Bowl. On the other hand, there is almost no correlation between adspend and volume after the Super Bowl.
+
+```{r Section 2.1.1}
+# Similarly, compute the *correlation* between **adspend** and **pos_prop** and between **adspend** and **neg_prop** in superbowl dataset, before the Super Bowl and after the Super Bowl.
+
+superbowl %>% group_by(superbowl) %>% summarise(correlation=cor(adspend, pos_prop))
+superbowl %>% group_by(superbowl) %>% summarise(correlation=cor(adspend, neg_prop))
+
+```
+
+##### The result of this query shows that there is a very strong, positive correlation between adspend and the proportion of positive mentions before the Super Bowl, while there is almost no correlation between adspend and pos_prop after the Super Bowl. Also, there is a moderate, positive correlation between adspend and neg_prop before the Super Bowl, while there is a very weak, positive correlation (almost no correlation) after the Super Bowl.
+
+```{r Section 2.2}
+# Second, compute the *covariance* and *correlation* between **adspend** and **volume**, between **adspend** and **pos_prop**, and between **adspend** and **neg_prop** for each **new_brand**, before the Super Bowl and after the Super Bowl.
+
+superbowl %>% group_by(new_brand, superbowl) %>% summarise(covariance=cov(adspend, volume), correlation=cor(adspend,volume))
+
+superbowl %>% group_by(new_brand, superbowl) %>% summarise(covariance=cov(adspend, pos_prop), correlation=cor(adspend, pos_prop))
+
+superbowl %>% group_by(new_brand, superbowl) %>% summarise(covariance=cov(adspend, neg_prop), correlation=cor(adspend,neg_prop))
+
+```
+
+
+### Super Bowl Data Visualizations
+
+##### This section contains the queries used to create different bar plots for the superbowl data using ggplot2.
+
+```{r Super Bowl Data Visualization: Average Ad Spend for Each Brand Before and After the Super Bowl}
+
+#Bar plot showing the average ad spend for each new brand before and after the Super Bowl.
+
+avg_adspend_bar_chart <- ggplot(superbowl, aes(x = new_brand, y = adspend, fill = superbowl)) +
+  geom_bar(stat = "summary", fun = "mean", position = "dodge") +
+  geom_text(stat = "summary",
+            fun = "mean",
+            aes(label = sprintf("%.2f", after_stat(y)), group = superbowl),
+            position = position_dodge(width = 0.9),
+            vjust = -0.5, 
+            size = 4) +
+  labs(title = "Average Ad Spend Before and After Super Bowl",
+       x = "Car Brands",
+       y = "Average Ad Spend ($1,000's)") +
+  scale_fill_manual(values = c("0" = "darkblue", "1" = "darkorange"), labels = c("Before Super Bowl", "After Super Bowl")) +
+  theme_minimal()
+
+print(avg_adspend_bar_chart)
+
+```
+
+```{r Super Bowl Data Visualization: Average Volume of Mentions for Each Brand Before and After the Super Bowl}
+
+#Bar plot showing the average volume of mentions for each new brand before and after the Super Bowl.
+
+avg_volume_bar_chart <- ggplot(superbowl, aes(x = new_brand, y = volume, fill = superbowl)) +
+  geom_bar(stat = "summary", fun = "mean", position = "dodge") +
+    geom_text(stat = "summary",
+            fun = "mean",
+            aes(label = sprintf("%.0f", after_stat(y)), group = superbowl),
+            position = position_dodge(width = 0.9),
+            vjust = -0.5, 
+            size = 4) +
+  labs(title = "Average Volume of Mentions Before and After Super Bowl",
+       x = "Car Brands",
+       y = "Average Volume",
+       caption = "#% = Percent Change in Volume of Mentions") +
+  scale_fill_manual(values = c("0" = "darkblue", "1" = "darkorange"), labels = c("Before Super Bowl", "After Super Bowl")) +
+  theme_minimal() +
+  annotate(geom = "text", x = "Beetle", y = 17000, label = "+26.4%", color = "darkgreen", size = 4) +
+  annotate(geom = "text", x = "Camaro", y = 105000, label = "+6.87%", color = "darkgreen", size = 4) +
+  annotate(geom = "text", x = "CR-Z", y = 17000, label = "+26.8%", color = "darkgreen", size = 4)
+
+print(avg_volume_bar_chart)
+
+```
+
+
+### **Questions**: 
+
+##### 1. What is the *correlation* between **adspend** and **volume** before AND after the Super Bowl? Does that imply a positive, negative or no relationship? Is the relationship strong?
+
+```{r Section 2: Question 1}
+superbowl %>% group_by(superbowl) %>% summarise(correlation=cor(adspend, volume))
+
+```
+
+##### The output of this query shows the correlation between ad spend and volume before the Super Bowl to be 0.975, while the correlation between ad spend and volume after the Super Bowl is shown to be 0.0513. The correlation between ad spend and volume before the Super Bowl, 0.975, implies a very strong, positive relationship between ad spend and volume of mentions. The correlation between ad spend and volume after the Super Bowl, 0.0513, although positive, implies almost no relationship between ad spend and volume of mentions since this value is very close to 0.
+
+##### 2. What is the *correlation* between **adspend** and **pos_prop** before AND after the Super Bowl? Does that imply a positive, negative or no relationship? Is the relationship strong? What about the relationship between **adspend** and **neg_prop** before AND after the Super Bowl?
+
+```{r Section 2: Question 2}
+superbowl %>% group_by(superbowl) %>% summarise(correlation_adspend_and_pos_prop=cor(adspend, pos_prop), correlation_adspend_and_neg_prop=cor(adspend, neg_prop))
+
+```
+
+##### Based on the output of this query, the correlation between adspend and pos_prop before the Super Bowl is 0.642, which implies a strong, positive relationship between the two. The correlation between adspend and pos_prop after the Super Bowl is 0.0918, which implies a very weak, yet positive relationship between the two - however, it is safer to say this value implies almost no relationship between the two since the correlation value of 0.0918 is very close to 0.
+
+##### Also, the correlation between adspend and neg_prop before the Super Bowl is 0.419, which implies a normal, positive relationship between the two. The correlation between adspend and neg_prop after the Super Bowl is 0.114, which implies a that there is almost no relationship between the two since the correlation value of 0.114 is very close to 0.
+
+
+##### 3. Which brand's ad spending did actually create a social media buzz (either positive or negative mentions)? Use both univariate and bivariate statistics for each brand. 
+
+```{r Section 2: Question 3: Beetle}
+# Beetle:
+# Univariate statistics:
+superbowl %>% filter(new_brand=="Beetle") %>% group_by(new_brand, superbowl) %>% summarise(mean_adspend=mean(adspend), mean_volume_mentions=mean(volume), mean_pos_prop=mean(pos_prop), mean_neg_prop=mean(neg_prop))
+
+# Bivariate statistics:
+superbowl %>% filter(new_brand=="Beetle") %>% group_by(new_brand, superbowl) %>% summarise(cor_adspend_and_volume=cor(adspend,volume), cor_adspend_and_pos_prop=cor(adspend,pos_prop), cor_adspend_and_neg_prop=cor(adspend,neg_prop))
+
+```
+
+##### Based on the results of the univariate statistics, mean ad spend for Beetle increased by $888,830 from before to after the Super Bowl. This is a very substantial increase in ad spending, yet the mean volume of overall mentions only went up by less than 1,000 mentions. The mean pos_prop went up by only 0.022, while the mean neg_prop increased by 0.0085. Although the increase in mean neg_prop is minuscule, this does not mean the jump in ad spending was justified, as the mean proportion of positive mentions barely increased.
+
+##### The bivariate statistics return the correlation between adspend and volume, pos_prop, and neg_prop for Beetle. The correlation between ad spend and volume, pos_prop, and neg_prop was all negative before the Super Bowl. It should be noted that the negative correlation between ad spend and neg_prop before the Super Bowl for Beetle, -0.633, should be considered substantial as it is close to -1.0. This strong, negative correlation between ad spend and neg_prop before the Super Bowl for Beetle means that on average, as ad spending increased for Beetle before the Super Bowl, the proportion of negative mentions decreased. The correlation between ad spend and volume, pos_prop, and neg_prop was all positive after the Super Bowl, however, I would say only the correlation between ad spend and volume was moderately significant, with a positive correlation value of 0.478.
+
+```{r Section 2: Question 3: CR-Z}
+# CR-Z:
+# Univariate statistics:
+superbowl %>% filter(new_brand=="CR-Z") %>% group_by(new_brand, superbowl) %>% summarise(mean_adspend=mean(adspend), mean_volume_mentions=mean(volume), mean_pos_prop=mean(pos_prop), mean_neg_prop=mean(neg_prop))
+
+# Bivariate statistics:                                                        
+superbowl %>% filter(new_brand=="CR-Z") %>% group_by(new_brand, superbowl) %>% summarise(cor_adspend_and_volume=cor(adspend,volume), cor_adspend_and_pos_prop=cor(adspend,pos_prop), cor_adspend_and_neg_prop=cor(adspend,neg_prop))
+
+```
+
+##### The univariate statistics return the mean ad spend for CR-Z, which can then be compared to the other columns returned in the query, like mean volume of mentions and the mean positive and negative proportion of mentions. From this query, we can see that the mean ad spend for CR-Z decreased from before to after the Super Bowl by $541. Interestingly, although ad spending was significantly reduced after the Super Bowl, the mean volume of mentions increased by 314, with a very slight increase in the average pos_prop as well.
+
+##### The bivariate statistics return the correlation between adspend and volume, pos_prop, and neg_prop for CR-Z. The correlation between ad spend and volume before and after the Super Bowl is positive, however the correlation between the two after the Super Bowl is more substantial, with a value of 0.396. This value shows a moderate, positive correlation between adspend and volume of mentions for CR-Z after the Super Bowl. Also, the correlation between ad spend and both pos and neg prop before the Super Bowl are both negative, but the strength of the correlation varies. Before the Super Bowl, there is a very strong, negative correlation between ad spend and pos_prop for CR-Z. This implies that on average, as ad spending increased, the proportion of positive mentions went down. There is also a moderate, negative correlation between ad spend and neg_prop for CR-Z before the Super Bowl, meaning that on average, as ad spending increased, negative mentions would slightly decrease. After the Super Bowl, there is no substantial correlation between ad spend and either pos_prop or neg_prop for CR-Z. 
+
+```{r Section 2: Question 3: Camaro}
+# Camaro:
+# Univariate statistics:
+superbowl %>% filter(new_brand=="Camaro") %>% group_by(new_brand, superbowl) %>% summarise(mean_adspend=mean(adspend), mean_volume_mentions=mean(volume), mean_pos_prop=mean(pos_prop), mean_neg_prop=mean(neg_prop))
+
+# Bivariate statistics:                                                           
+superbowl %>% filter(new_brand=="Camaro") %>% group_by(new_brand, superbowl) %>% summarise(cor_adspend_and_volume=cor(adspend,volume), cor_adspend_and_pos_prop=cor(adspend,pos_prop), cor_adspend_and_neg_prop=cor(adspend,neg_prop))
+
+```
+
+##### The univariate statistics return the mean ad spend for Camaro, which can then be compared to the other columns returned in the query, like mean volume of mentions and the mean positive and negative proportion of mentions. Based on the results of this first query, we can see that the mean ad spend for Camaro increased by $446,900, from an average of $71,100 to $518,000 - before and after the Super Bowl, respectively. With this average increase in ad spend, the average volume of mentions also increased by 6,017, from an average volume of 87,596 to 93,613. The average proportion of positive mentions also stayed the same, only increasing by 0.003, from 0.244 to 0.247, meaning almost a quarter of the mentions before and after the Super Bowl were positive. On average, only about five percent of mentions were negative before and after the Super Bowl, with the average proportion of negative mentions actually decreasing by 0.0023.
+
+##### The bivariate statistics return the correlation between adspend and volume, pos_prop, and neg_prop for Camaro. The correlation between ad spend and volume was negative, but not too substantial before the Super Bowl. After the Super Bowl, this correlation became positive, yet it was not very significant either. Before the Super Bowl, the correlation between ad spend and both pos_prop and neg_prop both show a moderate, positive correlation, which implies that as ad spend increases, both the proportion of positive and negative mentions tends to increase as well. After the Super Bowl, there are very weak, positive correlations between ad spend and volume, pos_prop, and neg_prop. Since the correlation between ad spend and volume, pos_prop, and neg_prop after the Super Bowl were very close to 0, I would not rule them as having a significant correlation.
+
+##### Considering these insights, while ad spending may contribute to creating social media buzz, the effectiveness varies across brands and might not solely rely on ad expenditure. It's essential to evaluate other factors influencing online engagement and brand perception. Investing millions in ads solely for social media buzz might not guarantee desired outcomes, as seen in this analysis of brand-specific metrics and correlations.
